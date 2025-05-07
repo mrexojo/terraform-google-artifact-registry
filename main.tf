@@ -31,18 +31,7 @@ resource "google_artifact_registry_repository" "repository" {
   # Optional mode configuration (standard or virtual)
   mode = var.mode
 
-  # Configure cleanup policies if enabled
-  dynamic "cleanup_policy_dry_run" {
-    for_each = var.enable_cleanup_policies ? [1] : []
-    content {
-      action = "KEEP"
-      most_recent_versions {
-        package_name_prefixes = var.cleanup_package_prefixes
-        keep_count            = var.cleanup_keep_count
-      }
-    }
-  }
-
+  # Configure cleanup policies if enabled - using standard cleanup_policies block
   dynamic "cleanup_policies" {
     for_each = var.cleanup_policies
     content {
@@ -69,6 +58,19 @@ resource "google_artifact_registry_repository" "repository" {
           package_name_prefixes = try(cleanup_policies.value.most_recent_versions.package_name_prefixes, [])
           keep_count            = try(cleanup_policies.value.most_recent_versions.keep_count, 0)
         }
+      }
+    }
+  }
+
+  # Add a default cleanup policy if enabled but no specific policies are defined
+  dynamic "cleanup_policies" {
+    for_each = var.enable_cleanup_policies && length(var.cleanup_policies) == 0 ? { "default-keep-recent" = true } : {}
+    content {
+      id     = "default-keep-recent"
+      action = "KEEP"
+      most_recent_versions {
+        package_name_prefixes = var.cleanup_package_prefixes
+        keep_count            = var.cleanup_keep_count
       }
     }
   }
