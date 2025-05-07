@@ -49,21 +49,25 @@ resource "google_artifact_registry_repository" "repository" {
       id     = cleanup_policies.key
       action = cleanup_policies.value.action
 
+      # Manejo condicional del bloque condition
       dynamic "condition" {
-        for_each = cleanup_policies.value.condition != null ? [cleanup_policies.value.condition] : []
+        # Solo crear el bloque si tenemos al menos un valor no vacío
+        for_each = contains(keys(cleanup_policies.value), "condition") ? [1] : []
         content {
-          tag_state             = lookup(condition.value, "tag_state", null)
-          tag_prefixes          = lookup(condition.value, "tag_prefixes", null)
-          older_than            = lookup(condition.value, "older_than", null)
-          package_name_prefixes = lookup(condition.value, "package_name_prefixes", null)
+          tag_state             = try(cleanup_policies.value.condition.tag_state, "")
+          tag_prefixes          = try(cleanup_policies.value.condition.tag_prefixes, [])
+          older_than            = try(cleanup_policies.value.condition.older_than, "")
+          package_name_prefixes = try(cleanup_policies.value.condition.package_name_prefixes, [])
         }
       }
 
+      # Manejo condicional del bloque most_recent_versions
       dynamic "most_recent_versions" {
-        for_each = cleanup_policies.value.most_recent_versions != null ? [cleanup_policies.value.most_recent_versions] : []
+        # Solo crear el bloque si tenemos al menos un valor no vacío
+        for_each = contains(keys(cleanup_policies.value), "most_recent_versions") ? [1] : []
         content {
-          package_name_prefixes = lookup(most_recent_versions.value, "package_name_prefixes", null)
-          keep_count            = lookup(most_recent_versions.value, "keep_count", null)
+          package_name_prefixes = try(cleanup_policies.value.most_recent_versions.package_name_prefixes, [])
+          keep_count            = try(cleanup_policies.value.most_recent_versions.keep_count, 0)
         }
       }
     }

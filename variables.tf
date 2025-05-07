@@ -116,16 +116,17 @@ variable "cleanup_policies" {
   description = "Map of cleanup policy configurations"
   type = map(object({
     action = string
-    condition = optional(object({
-      tag_state             = optional(string)
-      tag_prefixes          = optional(list(string))
-      older_than            = optional(string)
-      package_name_prefixes = optional(list(string))
-    }))
-    most_recent_versions = optional(object({
-      package_name_prefixes = optional(list(string))
-      keep_count            = optional(number)
-    }))
+    # Using null default values instead of optional attributes
+    condition = object({
+      tag_state             = string
+      tag_prefixes          = list(string)
+      older_than            = string
+      package_name_prefixes = list(string)
+    })
+    most_recent_versions = object({
+      package_name_prefixes = list(string)
+      keep_count            = number
+    })
   }))
   default = {}
 }
